@@ -14,9 +14,9 @@ const path= require("path");
 const dataService = require("./data-service.js");
 const fs = require('fs');
 const exphbs= require('express-handlebars');
-const dataServiceAuth = require("./dataServiceAuth.js");
+const dataServiceAuth = require("./data-service-auth.js");
 const app = express();
-// mongodb string  mongodb+srv://senecaweb:<password>@cluster0-vpqdm.mongodb.net/test?retryWrites=true
+
 const HTTP_PORT = process.env.PORT || 8080;
 
 app.use(clientSessions({
@@ -30,8 +30,9 @@ app.use(function(req, res, next) {
     res.locals.session = req.session;
     next();
 });
+
 app.use(express.static('public'));
-app.use(bodyParser.urlencoded({extended : true}));
+app.use(bodyParser.urlencoded({ extended : true }));
 app.use(function(req,res,next){     
     let route = req.baseUrl + req.path;     
     app.locals.activeRoute = (route == "/") ? "/" : route.replace(/\/$/, "");     
@@ -61,7 +62,8 @@ app.engine('.hbs', exphbs({
 app.set("view engine", ".hbs");
 
 function ensureLogin(req, res, next){
-    if(!req.seesion.user){
+
+    if(!req.session.user){
         res.redirect("/login");
     }else{
         next();
@@ -77,8 +79,9 @@ app.get("/about", function(req, res){
 });
 
 
+//ensureLogin,
 
-app.get("/employees", ensureLogin, function(req, res){
+app.get("/employees",  function(req, res){
 
 
    if(req.query.status ){
@@ -163,6 +166,7 @@ app.get("/departments", ensureLogin, function(req,res){
         res.render("departments", {message: "no results!"});
     }); 
 });
+
 
 app.get("/employees/add", ensureLogin, function(req,res){
     dataService.getDepartments().then(data=>{
@@ -270,26 +274,37 @@ app.get("/register", function(req, res){
     res.render("register");
 });
 
+
 app.post("/register", function(req, res){
-    dataServiceAuth.RegisterUser(req.body).then(()=>{
-        res.render("register", {successMessage: "User created"});
-    }).catch((error)=>{
-        res.render("register", { errorMessage: error, userName: req.body.userName  });
+    dataServiceAuth.registerUser(req.body)
+        .then(()=>{
+            res.render("register", {successMessage: "User created"});
+        }).catch((err)=>{
+            res.render("register", { errorMessage: err, userName: req.body.userName  });
+        });
 });
 
-app.post("/login", function(req, res){
-   req.body.userAgent = req.get('User-Agent');
-   dataServiceAuth.checkUser(req.body).then((user)=>{
-      req.session.user = {
-          userName: user.userName,
-          email: user.email,
-          loginHistory: user.loginHistory
-      }
-      res.redirect('/employees');
-   }).catch(err=>{
-       res.render("login", { errorMessage: err, userName: req.body.userName });
-   }); 
-});
+app.post("/login", (req, res) => {
+
+    req.body.userAgent = req.get('User-Agent');
+  
+    dataServiceAuth.checkUser(req.body).then((user) => {
+
+    req.session.user = {
+        userName: user.userName,
+        email: user.email,
+        loginHistory: user.loginHistory
+    }
+
+        res.redirect('/employees');
+    }).catch((err) => {
+      res.render("login", {errorMessage: err, userName: req.body.userName});
+    });
+  });
+  
+
+
+
 
 app.get("/logout", function(req, res){
     req.session.reset();
@@ -304,13 +319,18 @@ app.use(function(req, res){
     res.status(404).send("PAGE NOT FOUND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11!!!!!!!!!!");
 });
 
-app.listen(HTTP_PORT, onHttpStart);
 
-dataService.initialize().then(dataServiceAuth.initialize).then(function(){
-    app.listen(HTTP_PORT, function(){
-        console.log("app listening on port: " + HTTP_PORT);
-    });
-}).catch((err)=>{
-    console.log("Unable to start server: " + err);
-});
+
+dataService.initialize()
+      .then(dataServiceAuth.initialize)
+      .then(function(mes){
+          console.log(mes);
+          app.listen(HTTP_PORT, function(){
+              console.log("app listening on: " + HTTP_PORT);
+          });
+      }).catch(function(err){
+          console.log("unable to start server: " + err);
+      });
+      
+
 
