@@ -16,7 +16,7 @@ let userSchema = new Schema({
   }]
 });
 
-let User; // to be defined on new connection (see initialize)
+let User; 
 
 
 module.exports.initialize = function () {
@@ -24,7 +24,7 @@ module.exports.initialize = function () {
         let db = mongoose.createConnection("mongodb+srv://senecaweb:654321Xsh@cluster0-vpqdm.mongodb.net/web322_a6?retryWrites=true", { useNewUrlParser: true });
 
         db.on('error', (err)=>{
-            reject(err); // reject the promise with the provided error
+            reject(err); 
         });
         db.once('open', ()=>{
            User = db.model("users", userSchema);
@@ -43,12 +43,12 @@ module.exports.registerUser = function (userData) {
             reject("Passwords do not match");
         } else {
 
-            bcrypt.genSalt(10, function (err, salt) { // Generate a "salt" using 10 rounds
+            bcrypt.genSalt(10, function (err, salt) {
                 if (err) {
                         reject("There was an error encrypting the password");
                 }else{
 
-                    bcrypt.hash(userData.password, salt, function (err, hash) { // encrypt the password: userData.password
+                    bcrypt.hash(userData.password, salt, function (err, hash) { 
 
                         if (err) {
                             reject("There was an error encrypting the password");
